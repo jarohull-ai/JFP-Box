@@ -172,6 +172,28 @@ The library API is versioned with the executable and remains pre-1.0 until a
 future `v1.0.0` stable API commitment. It validates policy; it does not spawn
 or sandbox a process.
 
+## Distribution
+
+The Rust package is available on [crates.io](https://crates.io/crates/jfp-box)
+and its API documentation is published on
+[docs.rs](https://docs.rs/jfp-box).
+
+Add the library to a Rust project:
+
+```bash
+cargo add jfp-box
+```
+
+Install the `jfp-box` command-line tool directly from the registry:
+
+```bash
+cargo install jfp-box
+```
+
+The package includes the project license. Commercial, company,
+managed-service, and enterprise use remains subject to the separate terms in
+[COMMERCIAL-LICENSING.md](COMMERCIAL-LICENSING.md).
+
 ## Versioning and compatibility
 
 The executable uses SemVer. `validator_version` is the full tool version;
