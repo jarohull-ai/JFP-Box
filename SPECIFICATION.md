@@ -66,7 +66,7 @@ In JSON mode, standard output contains exactly one object with this shape:
 
 ```json
 {
-  "validator_version": "0.3.0",
+  "validator_version": "0.3.1",
   "manifest_spec_version": "0.1",
   "plan_status": "PLAN_ACCEPTED",
   "errors": [],

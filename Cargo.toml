@@ -1,9 +1,14 @@
 [package]
 name = "jfp-box"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2021"
 description = "Policy-first planner for JFP Box manifests"
 license-file = "LICENSE"
+repository = "https://github.com/jarohull-ai/JFP-Box"
+homepage = "https://github.com/jarohull-ai/JFP-Box"
+documentation = "https://docs.rs/jfp-box"
+readme = "README.md"
+keywords = ["ai-agents", "ai-security", "policy-as-code", "multi-agent", "rust"]
 
 [[bin]]
 name = "jfp-box"

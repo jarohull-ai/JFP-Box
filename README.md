@@ -11,7 +11,7 @@ task policy before a future agent runner receives permission to start work. It
 is designed for multi-agent systems where a visual workspace boundary alone is
 not a security boundary.
 
-Version `0.3.0` deliberately stops at planning. It starts no process, mounts no
+Version `0.3.1` deliberately stops at planning. It starts no process, mounts no
 filesystem, opens no connection, accesses no model, and changes no project
 files. Its job is to make an unsafe or contradictory task policy fail early and
 predictably.
@@ -118,7 +118,7 @@ Example result:
 
 ```json
 {
-  "validator_version": "0.3.0",
+  "validator_version": "0.3.1",
   "manifest_spec_version": "0.1",
   "plan_status": "PLAN_ACCEPTED",
   "errors": [],
