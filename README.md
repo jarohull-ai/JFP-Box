@@ -4,6 +4,8 @@
 
 [![Rust CI](https://github.com/jarohull-ai/JFP-Box/actions/workflows/rust-ci.yml/badge.svg?branch=main)](https://github.com/jarohull-ai/JFP-Box/actions/workflows/rust-ci.yml)
 
+![JFP Box: validate first, execute later](docs/assets/jfp-box-social-preview.jpg)
+
 JFP Box is a small Rust CLI that validates a declarative task policy before a
 future agent runner receives permission to start work. It is designed for
 multi-agent systems where a visual workspace boundary alone is not a security
