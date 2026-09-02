@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security report
+    url: https://github.com/jarohull-ai/JFP-Box/security/advisories/new
+    about: Please report potential vulnerabilities privately.
+  - name: Commercial licensing
+    url: mailto:venom.evo@protonmail.com
+    about: Contact the project owner directly for commercial or enterprise licensing.
