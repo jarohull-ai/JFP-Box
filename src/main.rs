@@ -15,11 +15,11 @@ const KNOWN_GATEWAYS: [&str; 3] = [
     "RESEARCH:PUBLIC_WEB_READONLY_V1",
     "API:APPROVED_READONLY_V1",
 ];
-const KNOWN_GATEWAY_POLICIES: [&str; 4] = [
-    "OFFLINE_V1",
-    "MODEL_LOCAL_V1",
-    "OSINT_PUBLIC_WEB_V1",
-    "APPROVED_API_V1",
+const GATEWAY_POLICY_MODES: [(&str, &str); 4] = [
+    ("OFFLINE_V1", "OFFLINE_STRICT"),
+    ("MODEL_LOCAL_V1", "MODEL_ONLY"),
+    ("OSINT_PUBLIC_WEB_V1", "RESEARCH"),
+    ("APPROVED_API_V1", "NETWORK_RESTRICTED"),
 ];
 const ALLOWED_FIELDS: [&str; 25] = [
     "SPEC_VERSION",
@@ -83,7 +83,7 @@ impl Violation {
                 Some("ALLOWED_GATEWAYS")
             }
             "ERR_EVIDENCE_LIMIT_CONFLICT" => Some("MAX_TOTAL_EVIDENCE_BYTES"),
-            "ERR_UNKNOWN_GATEWAY_POLICY" => Some("GATEWAY_POLICY_ID"),
+            "ERR_UNKNOWN_GATEWAY_POLICY" | "ERR_POLICY_MODE_MISMATCH" => Some("GATEWAY_POLICY_ID"),
             _ => None,
         }
     }
@@ -236,6 +236,12 @@ fn parse_size_bytes(manifest: &Manifest, key: &str, errors: &mut Vec<Violation>)
     }
 }
 
+fn expected_mode_for_policy(policy: &str) -> Option<&'static str> {
+    GATEWAY_POLICY_MODES
+        .iter()
+        .find_map(|(known_policy, mode)| (*known_policy == policy).then_some(*mode))
+}
+
 fn validate(manifest: &Manifest) -> Vec<Violation> {
     let mut errors = Vec::new();
     for key in manifest.fields.keys() {
@@ -287,21 +293,29 @@ fn validate(manifest: &Manifest) -> Vec<Violation> {
             "WRITE_MODE must be PATCH_ONLY in v0.1",
         ));
     }
-    if let Some(policy) = manifest.get("GATEWAY_POLICY_ID") {
-        if !KNOWN_GATEWAY_POLICIES.contains(&policy) {
-            errors.push(Violation::new(
-                "ERR_UNKNOWN_GATEWAY_POLICY",
-                format!("gateway policy is not registered: {policy}"),
-            ));
-        }
-    }
-
     let mode = manifest.get("NETWORK_MODE").unwrap_or_default();
     if !MODES.contains(&mode) {
         errors.push(Violation::new(
             "ERR_INVALID_NETWORK_MODE",
             format!("NETWORK_MODE must be one of: {}", MODES.join(", ")),
         ));
+    }
+    if let Some(policy) = manifest.get("GATEWAY_POLICY_ID") {
+        match expected_mode_for_policy(policy) {
+            None => {
+                errors.push(Violation::new(
+                    "ERR_UNKNOWN_GATEWAY_POLICY",
+                    format!("gateway policy is not registered: {policy}"),
+                ));
+            }
+            Some(expected_mode) if MODES.contains(&mode) && mode != expected_mode => {
+                errors.push(Violation::new(
+                    "ERR_POLICY_MODE_MISMATCH",
+                    format!("GATEWAY_POLICY_ID {policy} requires NETWORK_MODE {expected_mode}"),
+                ));
+            }
+            Some(_) => {}
+        }
     }
 
     let gateways = match manifest.list("ALLOWED_GATEWAYS") {
@@ -932,6 +946,38 @@ mod tests {
     }
 
     #[test]
+    fn rejects_every_invalid_gateway_policy_mode_pair() {
+        let fixtures = [
+            (include_str!("../examples/offline.jfp"), "OFFLINE_V1"),
+            (include_str!("../examples/model-only.jfp"), "MODEL_LOCAL_V1"),
+            (
+                include_str!("../examples/research.jfp"),
+                "OSINT_PUBLIC_WEB_V1",
+            ),
+            (
+                include_str!("../examples/network-restricted.jfp"),
+                "APPROVED_API_V1",
+            ),
+        ];
+
+        for (fixture, expected_policy) in fixtures {
+            for (policy, _) in GATEWAY_POLICY_MODES {
+                if policy == expected_policy {
+                    continue;
+                }
+                let mismatch = fixture.replace(
+                    &format!("F:GATEWAY_POLICY_ID:{expected_policy};"),
+                    &format!("F:GATEWAY_POLICY_ID:{policy};"),
+                );
+                assert!(
+                    codes(&mismatch).contains("ERR_POLICY_MODE_MISMATCH"),
+                    "{policy} must not validate with the fixture for {expected_policy}"
+                );
+            }
+        }
+    }
+
+    #[test]
     fn hashes_exact_manifest_bytes_with_sha256() {
         assert_eq!(
             sha256_hex(b"abc"),
@@ -951,7 +997,7 @@ mod tests {
         assert_eq!(
             report,
             format!(
-                "{{\"validator_version\":\"0.1.0\",\"manifest_spec_version\":\"0.1\",\"plan_status\":\"PLAN_ACCEPTED\",\"errors\":[],\"audit_trace_id\":\"b3678c7c-1cb8-49a4-a9f5-4a272506b3a8\",\"manifest_sha256\":\"{hash}\",\"generated_at\":\"2026-09-02T08:20:00Z\"}}"
+                "{{\"validator_version\":\"0.1.1\",\"manifest_spec_version\":\"0.1\",\"plan_status\":\"PLAN_ACCEPTED\",\"errors\":[],\"audit_trace_id\":\"b3678c7c-1cb8-49a4-a9f5-4a272506b3a8\",\"manifest_sha256\":\"{hash}\",\"generated_at\":\"2026-09-02T08:20:00Z\"}}"
             )
         );
     }

@@ -66,7 +66,7 @@ In JSON mode, standard output contains exactly one object with this shape:
 
 ```json
 {
-  "validator_version": "0.1.0",
+  "validator_version": "0.1.1",
   "manifest_spec_version": "0.1",
   "plan_status": "PLAN_ACCEPTED",
   "errors": [],
@@ -82,6 +82,10 @@ In JSON mode, standard output contains exactly one object with this shape:
 without parsing or normalisation. `generated_at` is an RFC 3339 UTC timestamp.
 `errors` is always an array; every item has `code`, `field` (a field name or
 `null`), and `message`.
+
+Each registered `GATEWAY_POLICY_ID` is bound to exactly one `NETWORK_MODE` in
+v0.1. A known policy paired with another valid mode is rejected with
+`ERR_POLICY_MODE_MISMATCH`.
 
 Exit codes are stable: `0` for `PLAN_ACCEPTED`, `1` for `PLAN_REJECTED`
 (including syntax or UTF-8 input errors), and `2` for command-line, file I/O,
