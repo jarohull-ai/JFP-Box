@@ -30,6 +30,28 @@ JFP Box separates two concerns:
 The current validator is the policy gate. It is intentionally useful before a
 live runner exists.
 
+## How it works
+
+```mermaid
+flowchart LR
+    A["Agent / UI requests a task"] --> B["Trusted control plane builds<br/>JFP manifest"]
+    B --> C["jfp-box plan<br/>v0.1: policy simulation"]
+    C -->|"PLAN_REJECTED"| D["Stable ERR_* result<br/>+ audit trace"]
+    C -->|"PLAN_ACCEPTED"| E["Future trusted runner<br/>(not part of v0.1)"]
+    E --> F["OS sandbox + resource limits"]
+    E --> G["Typed model / research gateways"]
+    E --> H["Scratch output → deterministic<br/>patch applier → workspace"]
+
+    classDef current fill:#0f766e,color:#ffffff,stroke:#115e59;
+    classDef future fill:#334155,color:#ffffff,stroke:#1e293b;
+    class C,D current;
+    class E,F,G,H future;
+```
+
+The green nodes exist in v0.1. The dark nodes are deliberately separate future
+components: an accepted policy must still be enforced by a trusted runner and
+operating-system sandbox.
+
 ## What v0.1 validates
 
 - Default-deny direct networking: `DIRECT_NETWORK:DENY` is mandatory.
