@@ -21,6 +21,22 @@ const GATEWAY_POLICY_MODES: [(&str, &str); 4] = [
     ("OSINT_PUBLIC_WEB_V1", "RESEARCH"),
     ("APPROVED_API_V1", "NETWORK_RESTRICTED"),
 ];
+const MODEL_LIMIT_FIELDS: [&str; 2] = ["MAX_MODEL_TOKENS", "MODEL_COST_BUDGET_USD"];
+const RESEARCH_LIMIT_FIELDS: [&str; 6] = [
+    "MAX_RESEARCH_REQUESTS",
+    "MAX_FETCH_BYTES",
+    "MAX_TOTAL_EVIDENCE_BYTES",
+    "MAX_REDIRECTS",
+    "MAX_DOMAINS",
+    "ALLOWED_CONTENT_TYPES",
+];
+const RUNNER_RESERVED_FIELDS: [&str; 5] = [
+    "MAX_ACTIVE_BOXES",
+    "BOX_TTL_MAX",
+    "BOX_TOKEN_BUDGET",
+    "UI_CONFIRM_REQUIRED",
+    "THREAT_PROFILE",
+];
 const ALLOWED_FIELDS: [&str; 25] = [
     "SPEC_VERSION",
     "TASK_ID",
@@ -52,6 +68,7 @@ const ALLOWED_FIELDS: [&str; 25] = [
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Violation {
     code: String,
+    field: Option<String>,
     message: String,
 }
 
@@ -59,11 +76,23 @@ impl Violation {
     fn new(code: &str, message: impl Into<String>) -> Self {
         Self {
             code: code.to_owned(),
+            field: None,
+            message: message.into(),
+        }
+    }
+
+    fn for_field(code: &str, field: &str, message: impl Into<String>) -> Self {
+        Self {
+            code: code.to_owned(),
+            field: Some(field.to_owned()),
             message: message.into(),
         }
     }
 
     fn field(&self) -> Option<&str> {
+        if let Some(field) = self.field.as_deref() {
+            return Some(field);
+        }
         match self.code.as_str() {
             "ERR_DIRECT_NETWORK" => Some("DIRECT_NETWORK"),
             "ERR_EVIDENCE_CLASS" => Some("EVIDENCE_CLASS"),
@@ -240,6 +269,45 @@ fn expected_mode_for_policy(policy: &str) -> Option<&'static str> {
     GATEWAY_POLICY_MODES
         .iter()
         .find_map(|(known_policy, mode)| (*known_policy == policy).then_some(*mode))
+}
+
+fn reject_orphaned_field(errors: &mut Vec<Violation>, field: &str, reason: &str) {
+    errors.push(Violation::for_field(
+        "ERR_ORPHANED_FIELD",
+        field,
+        format!("{field} is declared but has no active v0.1 consumer: {reason}"),
+    ));
+}
+
+fn validate_field_consumers(
+    manifest: &Manifest,
+    mode: &str,
+    bound_tools: &BTreeSet<&str>,
+    errors: &mut Vec<Violation>,
+) {
+    if !bound_tools.contains("MODEL_GENERATE") {
+        for field in MODEL_LIMIT_FIELDS {
+            if manifest.get(field).is_some() {
+                reject_orphaned_field(errors, field, "MODEL_GENERATE is not bound");
+            }
+        }
+    }
+    if mode != "RESEARCH" {
+        for field in RESEARCH_LIMIT_FIELDS {
+            if manifest.get(field).is_some() {
+                reject_orphaned_field(errors, field, "NETWORK_MODE is not RESEARCH");
+            }
+        }
+    }
+    for field in RUNNER_RESERVED_FIELDS {
+        if manifest.get(field).is_some() {
+            reject_orphaned_field(
+                errors,
+                field,
+                "the v0.1 validator has no live runner to enforce it",
+            );
+        }
+    }
 }
 
 fn validate(manifest: &Manifest) -> Vec<Violation> {
@@ -467,19 +535,7 @@ fn validate(manifest: &Manifest) -> Vec<Violation> {
         _ => {}
     }
 
-    for key in ["MAX_ACTIVE_BOXES", "BOX_TOKEN_BUDGET"] {
-        if manifest.get(key).is_some() {
-            let _ = parse_positive_u64(manifest, key, &mut errors);
-        }
-    }
-    if let Some(confirmation) = manifest.get("UI_CONFIRM_REQUIRED") {
-        if confirmation != "TRUE" && confirmation != "FALSE" {
-            errors.push(Violation::new(
-                "ERR_INVALID_BOOLEAN",
-                "UI_CONFIRM_REQUIRED must be TRUE or FALSE",
-            ));
-        }
-    }
+    validate_field_consumers(manifest, mode, &bound_tools, &mut errors);
     errors
 }
 
@@ -978,6 +1034,49 @@ mod tests {
     }
 
     #[test]
+    fn rejects_every_optional_field_without_an_active_consumer() {
+        let offline = include_str!("../examples/offline.jfp");
+        let cases = [
+            ("MAX_MODEL_TOKENS", "50000"),
+            ("MODEL_COST_BUDGET_USD", "0.25"),
+            ("MAX_RESEARCH_REQUESTS", "10"),
+            ("MAX_FETCH_BYTES", "5M"),
+            ("MAX_TOTAL_EVIDENCE_BYTES", "25M"),
+            ("MAX_REDIRECTS", "3"),
+            ("MAX_DOMAINS", "10"),
+            ("ALLOWED_CONTENT_TYPES", "[text/html]"),
+            ("MAX_ACTIVE_BOXES", "2"),
+            ("BOX_TTL_MAX", "5M"),
+            ("BOX_TOKEN_BUDGET", "12000"),
+            ("UI_CONFIRM_REQUIRED", "TRUE"),
+            ("THREAT_PROFILE", "P2"),
+        ];
+
+        for (field, value) in cases {
+            let candidate = format!("{offline}\nF:{field}:{value};\n");
+            let errors = validate(&manifest(&candidate));
+            assert!(
+                errors.iter().any(|error| {
+                    error.code == "ERR_ORPHANED_FIELD" && error.field() == Some(field)
+                }),
+                "{field} must be rejected without an active consumer"
+            );
+        }
+    }
+
+    #[test]
+    fn accepts_optional_fields_with_their_active_consumers() {
+        for fixture in [
+            include_str!("../examples/model-only.jfp"),
+            include_str!("../examples/research.jfp"),
+        ] {
+            assert!(validate(&manifest(fixture))
+                .iter()
+                .all(|error| error.code != "ERR_ORPHANED_FIELD"));
+        }
+    }
+
+    #[test]
     fn hashes_exact_manifest_bytes_with_sha256() {
         assert_eq!(
             sha256_hex(b"abc"),
@@ -997,7 +1096,7 @@ mod tests {
         assert_eq!(
             report,
             format!(
-                "{{\"validator_version\":\"0.1.1\",\"manifest_spec_version\":\"0.1\",\"plan_status\":\"PLAN_ACCEPTED\",\"errors\":[],\"audit_trace_id\":\"b3678c7c-1cb8-49a4-a9f5-4a272506b3a8\",\"manifest_sha256\":\"{hash}\",\"generated_at\":\"2026-09-02T08:20:00Z\"}}"
+                "{{\"validator_version\":\"0.1.2\",\"manifest_spec_version\":\"0.1\",\"plan_status\":\"PLAN_ACCEPTED\",\"errors\":[],\"audit_trace_id\":\"b3678c7c-1cb8-49a4-a9f5-4a272506b3a8\",\"manifest_sha256\":\"{hash}\",\"generated_at\":\"2026-09-02T08:20:00Z\"}}"
             )
         );
     }

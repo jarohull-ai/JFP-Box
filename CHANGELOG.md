@@ -2,6 +2,15 @@
 
 All notable changes to JFP Box are documented here.
 
+## [0.1.2] - 2026-09-02
+
+### Fixed
+
+- Reject optional declarations without an active v0.1 consumer with
+  `ERR_ORPHANED_FIELD`.
+- Return the exact orphaned field name in machine-readable error output.
+- Reject runner-only controls until a trusted runner can enforce them.
+
 ## [0.1.1] - 2026-09-02
 
 ### Fixed

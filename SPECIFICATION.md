@@ -66,7 +66,7 @@ In JSON mode, standard output contains exactly one object with this shape:
 
 ```json
 {
-  "validator_version": "0.1.1",
+  "validator_version": "0.1.2",
   "manifest_spec_version": "0.1",
   "plan_status": "PLAN_ACCEPTED",
   "errors": [],
@@ -86,6 +86,12 @@ without parsing or normalisation. `generated_at` is an RFC 3339 UTC timestamp.
 Each registered `GATEWAY_POLICY_ID` is bound to exactly one `NETWORK_MODE` in
 v0.1. A known policy paired with another valid mode is rejected with
 `ERR_POLICY_MODE_MISMATCH`.
+
+Every optional field must have an active v0.1 consumer. Model limits require a
+`MODEL_GENERATE` binding, research limits require `NETWORK_MODE:RESEARCH`, and
+runner-only controls are rejected until a trusted runner can enforce them. A
+field without an active consumer is rejected with `ERR_ORPHANED_FIELD`; the
+JSON error item's `field` identifies the exact declaration.
 
 Exit codes are stable: `0` for `PLAN_ACCEPTED`, `1` for `PLAN_REJECTED`
 (including syntax or UTF-8 input errors), and `2` for command-line, file I/O,
