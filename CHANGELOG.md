@@ -2,6 +2,16 @@
 
 All notable changes to JFP Box are documented here.
 
+## [0.3.0] - 2026-09-02
+
+### Added
+
+- Enforced rustdocs for every public library item, with executable examples for
+  parsing, validation, hashing, and JSON report generation.
+- Criterion baseline benchmarks for parsing, policy validation, and JSON report
+  generation.
+- CI checks that API documentation and benchmark code compile successfully.
+
 ## [0.2.1] - 2026-09-02
 
 ### Fixed

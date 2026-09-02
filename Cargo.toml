@@ -1,6 +1,6 @@
 [package]
 name = "jfp-box"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2021"
 description = "Policy-first planner for JFP Box manifests"
 license-file = "LICENSE"
@@ -8,3 +8,10 @@ license-file = "LICENSE"
 [[bin]]
 name = "jfp-box"
 path = "src/main.rs"
+
+[dev-dependencies]
+criterion = "0.5.1"
+
+[[bench]]
+name = "policy"
+harness = false

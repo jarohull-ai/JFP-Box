@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   validate:
-    name: Format, lint, test, and build
+    name: Format, lint, document, test, and build
     runs-on: ubuntu-latest
 
     steps:
@@ -29,8 +29,16 @@ jobs:
       - name: Lint without warnings
         run: cargo clippy --all-targets -- -D warnings
 
+      - name: Build API documentation without warnings
+        env:
+          RUSTDOCFLAGS: -D warnings
+        run: cargo doc --no-deps --locked
+
       - name: Run tests
         run: cargo test --locked
+
+      - name: Compile benchmarks
+        run: cargo bench --bench policy --no-run --locked
 
       - name: Build release binary
         run: cargo build --release --locked

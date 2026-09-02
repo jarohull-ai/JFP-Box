@@ -1,3 +1,10 @@
+//! Policy parsing, validation, and reporting primitives for JFP Box manifests.
+//!
+//! This crate validates policy consistency only. It does not start a process,
+//! mount a filesystem, open a network connection, or enforce an OS sandbox.
+
+#![warn(missing_docs)]
+
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -63,6 +70,10 @@ const ALLOWED_FIELDS: [&str; 25] = [
 ];
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// A structured parser or policy-validation finding.
+///
+/// A finding contains a stable `ERR_*` code, a human-readable message, and,
+/// when it can be determined, the related manifest field.
 pub struct Violation {
     code: String,
     field: Option<String>,
@@ -70,6 +81,10 @@ pub struct Violation {
 }
 
 impl Violation {
+    /// Creates a finding without an explicit manifest field.
+    ///
+    /// This is primarily useful to adapters that need to report errors outside
+    /// manifest validation, such as invalid input encoding.
     pub fn new(code: &str, message: impl Into<String>) -> Self {
         Self {
             code: code.to_owned(),
@@ -86,14 +101,20 @@ impl Violation {
         }
     }
 
+    /// Returns the stable `ERR_*` identifier for this finding.
     pub fn code(&self) -> &str {
         &self.code
     }
 
+    /// Returns a human-readable explanation of this finding.
     pub fn message(&self) -> &str {
         &self.message
     }
 
+    /// Returns the associated manifest field when one can be identified.
+    ///
+    /// Some codes are mapped to their canonical field by the validator; other
+    /// findings, such as general syntax errors, have no single field.
     pub fn field(&self) -> Option<&str> {
         if let Some(field) = self.field.as_deref() {
             return Some(field);
@@ -124,11 +145,19 @@ impl Violation {
 }
 
 #[derive(Debug)]
+/// A syntactically valid JFP manifest.
+///
+/// Construct a manifest with [`parse_manifest`], then pass it to [`validate`]
+/// for semantic policy checks.
 pub struct Manifest {
     fields: BTreeMap<String, String>,
 }
 
 impl Manifest {
+    /// Returns the trimmed raw value for a named manifest field.
+    ///
+    /// The value is not normalized. In particular, list-valued fields retain
+    /// their bracketed source representation.
     pub fn get(&self, key: &str) -> Option<&str> {
         self.fields.get(key).map(String::as_str)
     }
@@ -140,6 +169,25 @@ impl Manifest {
     }
 }
 
+/// Parses JFP syntax into a [`Manifest`] without applying policy rules.
+///
+/// Blank lines and lines beginning with `#` are ignored. Every other line must
+/// use `F:KEY:VALUE;` syntax with a unique uppercase field name. Call
+/// [`validate`] after parsing to apply the JFP Box policy.
+///
+/// # Errors
+///
+/// Returns all syntax findings found in the input, including malformed lines
+/// and duplicate fields.
+///
+/// # Examples
+///
+/// ```
+/// use jfp_box::parse_manifest;
+///
+/// let manifest = parse_manifest(include_str!("../examples/offline.jfp"));
+/// assert!(manifest.is_ok());
+/// ```
 pub fn parse_manifest(input: &str) -> Result<Manifest, Vec<Violation>> {
     let mut fields = BTreeMap::new();
     let mut errors = Vec::new();
@@ -309,6 +357,21 @@ fn validate_field_consumers(
     }
 }
 
+/// Validates a parsed manifest against the JFP Box v0.1 policy.
+///
+/// Validation is non-mutating and may return more than one finding. An empty
+/// result means that the manifest is internally consistent with the policy; it
+/// is not proof of sandboxing or permission to execute a task.
+///
+/// # Examples
+///
+/// ```
+/// use jfp_box::{parse_manifest, validate};
+///
+/// let manifest = parse_manifest(include_str!("../examples/offline.jfp"))
+///     .expect("example has valid syntax");
+/// assert!(validate(&manifest).is_empty());
+/// ```
 pub fn validate(manifest: &Manifest) -> Vec<Violation> {
     let mut errors = Vec::new();
     for key in manifest.fields.keys() {
@@ -613,6 +676,21 @@ fn validate_research_limits(manifest: &Manifest, errors: &mut Vec<Violation>) {
     }
 }
 
+/// Returns the lowercase SHA-256 digest of the exact input bytes.
+///
+/// This function intentionally hashes bytes rather than parsed manifest data,
+/// so line-ending or whitespace changes produce a different digest.
+///
+/// # Examples
+///
+/// ```
+/// use jfp_box::sha256_hex;
+///
+/// assert_eq!(
+///     sha256_hex(b"abc"),
+///     "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+/// );
+/// ```
 pub fn sha256_hex(input: &[u8]) -> String {
     const INITIAL: [u32; 8] = [
         0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab,
@@ -696,6 +774,10 @@ pub fn sha256_hex(input: &[u8]) -> String {
     hash.iter().map(|word| format!("{word:08x}")).collect()
 }
 
+/// Returns the current UTC time formatted as an RFC 3339 timestamp.
+///
+/// The timestamp is intended for audit-report metadata and is based on the
+/// system clock; it is not monotonic.
 pub fn now_rfc3339() -> String {
     let seconds = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -747,6 +829,28 @@ fn json_optional(value: Option<&str>) -> String {
     value.map(json_string).unwrap_or_else(|| "null".to_owned())
 }
 
+/// Serializes a stable machine-readable JFP Box plan report.
+///
+/// The caller supplies the exact-byte manifest hash and timestamp so the
+/// surrounding application controls when they are captured. `manifest` may be
+/// `None` when parsing or input decoding failed.
+///
+/// # Examples
+///
+/// ```
+/// use jfp_box::{json_report, parse_manifest, sha256_hex, validate};
+///
+/// let source = include_str!("../examples/offline.jfp");
+/// let manifest = parse_manifest(source).expect("example has valid syntax");
+/// let errors = validate(&manifest);
+/// let report = json_report(
+///     Some(&manifest),
+///     &errors,
+///     &sha256_hex(source.as_bytes()),
+///     "2026-09-02T08:20:00Z",
+/// );
+/// assert!(report.contains("\"plan_status\":\"PLAN_ACCEPTED\""));
+/// ```
 pub fn json_report(
     manifest: Option<&Manifest>,
     errors: &[Violation],
@@ -955,7 +1059,7 @@ mod tests {
         assert_eq!(
             report,
             format!(
-                "{{\"validator_version\":\"0.2.1\",\"manifest_spec_version\":\"0.1\",\"plan_status\":\"PLAN_ACCEPTED\",\"errors\":[],\"audit_trace_id\":\"b3678c7c-1cb8-49a4-a9f5-4a272506b3a8\",\"manifest_sha256\":\"{hash}\",\"generated_at\":\"2026-09-02T08:20:00Z\"}}"
+                "{{\"validator_version\":\"0.3.0\",\"manifest_spec_version\":\"0.1\",\"plan_status\":\"PLAN_ACCEPTED\",\"errors\":[],\"audit_trace_id\":\"b3678c7c-1cb8-49a4-a9f5-4a272506b3a8\",\"manifest_sha256\":\"{hash}\",\"generated_at\":\"2026-09-02T08:20:00Z\"}}"
             )
         );
     }
