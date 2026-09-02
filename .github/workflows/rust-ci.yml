@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   validate:
-    name: Format, test, and build
+    name: Format, lint, test, and build
     runs-on: ubuntu-latest
 
     steps:
@@ -25,6 +25,9 @@ jobs:
 
       - name: Check formatting
         run: cargo fmt -- --check
+
+      - name: Lint without warnings
+        run: cargo clippy --all-targets -- -D warnings
 
       - name: Run tests
         run: cargo test --locked

@@ -2,6 +2,20 @@
 
 All notable changes to JFP Box are documented here.
 
+## [0.2.0] - 2026-09-02
+
+### Added
+
+- Reusable Rust library API for manifest parsing, policy validation, SHA-256
+  binding, timestamps, and JSON report generation.
+- External integration coverage proving the public library API independently of
+  the CLI.
+
+### Changed
+
+- Reduced the CLI to argument parsing, file I/O, presentation, and exit-code
+  handling; policy logic remains in the library.
+
 ## [0.1.2] - 2026-09-02
 
 ### Fixed

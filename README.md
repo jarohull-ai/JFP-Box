@@ -6,12 +6,12 @@
 
 ![JFP Box: validate first, execute later](docs/assets/jfp-box-social-preview.jpg)
 
-JFP Box is a small Rust CLI that validates a declarative task policy before a
-future agent runner receives permission to start work. It is designed for
-multi-agent systems where a visual workspace boundary alone is not a security
-boundary.
+JFP Box is a small Rust CLI and reusable library that validate a declarative
+task policy before a future agent runner receives permission to start work. It
+is designed for multi-agent systems where a visual workspace boundary alone is
+not a security boundary.
 
-Version `0.1.2` deliberately stops at planning. It starts no process, mounts no
+Version `0.2.0` deliberately stops at planning. It starts no process, mounts no
 filesystem, opens no connection, accesses no model, and changes no project
 files. Its job is to make an unsafe or contradictory task policy fail early and
 predictably.
@@ -118,7 +118,7 @@ Example result:
 
 ```json
 {
-  "validator_version": "0.1.2",
+  "validator_version": "0.2.0",
   "manifest_spec_version": "0.1",
   "plan_status": "PLAN_ACCEPTED",
   "errors": [],
@@ -141,6 +141,26 @@ Run the policy suite:
 ```bash
 cargo test
 ```
+
+## Library integration
+
+The reusable policy core lives in `src/lib.rs`; the CLI is intentionally a thin
+adapter around it. A future runner can call the same parser and validator
+without parsing terminal text:
+
+```rust
+use jfp_box::{parse_manifest, validate};
+
+let manifest = parse_manifest(manifest_text).expect("manifest syntax must be valid");
+let violations = validate(&manifest);
+if violations.is_empty() {
+    // The policy is consistent. A trusted runner may now apply its own checks.
+}
+```
+
+The library API is versioned with the executable and remains pre-1.0 until a
+future `v1.0.0` stable API commitment. It validates policy; it does not spawn
+or sandbox a process.
 
 ## Versioning and compatibility
 
