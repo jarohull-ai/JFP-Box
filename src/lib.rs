@@ -640,10 +640,14 @@ pub fn sha256_hex(input: &[u8]) -> String {
     padded.extend_from_slice(&bit_length.to_be_bytes());
 
     let mut hash = INITIAL;
-    for chunk in padded.chunks_exact(64) {
+    let (chunks, remainder) = padded.as_chunks::<64>();
+    debug_assert!(remainder.is_empty());
+    for chunk in chunks {
         let mut words = [0u32; 64];
-        for (index, bytes) in chunk.chunks_exact(4).take(16).enumerate() {
-            words[index] = u32::from_be_bytes(bytes.try_into().expect("chunk has four bytes"));
+        let (word_bytes, remainder) = chunk.as_chunks::<4>();
+        debug_assert!(remainder.is_empty());
+        for (index, bytes) in word_bytes.iter().enumerate() {
+            words[index] = u32::from_be_bytes(*bytes);
         }
         for index in 16..64 {
             let small_sigma0 = words[index - 15].rotate_right(7)
@@ -951,7 +955,7 @@ mod tests {
         assert_eq!(
             report,
             format!(
-                "{{\"validator_version\":\"0.2.0\",\"manifest_spec_version\":\"0.1\",\"plan_status\":\"PLAN_ACCEPTED\",\"errors\":[],\"audit_trace_id\":\"b3678c7c-1cb8-49a4-a9f5-4a272506b3a8\",\"manifest_sha256\":\"{hash}\",\"generated_at\":\"2026-09-02T08:20:00Z\"}}"
+                "{{\"validator_version\":\"0.2.1\",\"manifest_spec_version\":\"0.1\",\"plan_status\":\"PLAN_ACCEPTED\",\"errors\":[],\"audit_trace_id\":\"b3678c7c-1cb8-49a4-a9f5-4a272506b3a8\",\"manifest_sha256\":\"{hash}\",\"generated_at\":\"2026-09-02T08:20:00Z\"}}"
             )
         );
     }

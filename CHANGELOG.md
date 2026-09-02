@@ -2,6 +2,13 @@
 
 All notable changes to JFP Box are documented here.
 
+## [0.2.1] - 2026-09-02
+
+### Fixed
+
+- Made the SHA-256 block iteration compatible with the current Clippy lint set
+  used by GitHub Actions.
+
 ## [0.2.0] - 2026-09-02
 
 ### Added
