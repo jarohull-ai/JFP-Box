@@ -2,6 +2,19 @@
 
 All notable changes to JFP Box are documented here.
 
+## [0.4.0] - 2026-09-03
+
+### Added
+
+- Property-based tests covering arbitrary UTF-8 and byte input.
+- A libFuzzer harness for parser robustness testing.
+- A large-input regression test and reproducible security-testing scope.
+
+### Security
+
+- RustSec audit completed with no known vulnerabilities in the locked dependency graph.
+- Extended fuzz run completed without crashes, panics, or hangs.
+
 ## [0.3.1] - 2026-09-02
 
 ### Changed

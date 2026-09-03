@@ -1040,6 +1040,16 @@ mod tests {
     }
 
     #[test]
+    fn parses_large_manifest_without_panicking() {
+        // A large comment-only input exercises line scanning and allocation
+        // behavior without relying on a valid policy. The parser must return
+        // a normal result rather than panic or hang.
+        let input = format!("#{}\n", "x".repeat(1_048_576));
+        let result = parse_manifest(&input);
+        assert!(result.is_ok());
+    }
+
+    #[test]
     fn hashes_exact_manifest_bytes_with_sha256() {
         assert_eq!(
             sha256_hex(b"abc"),
