@@ -45,7 +45,7 @@ dependencies = [
 
 [[package]]
 name = "jfp-box"
-version = "0.3.1"
+version = "0.4.1"
 
 [[package]]
 name = "jfp-box-fuzz"
