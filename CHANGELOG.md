@@ -2,6 +2,13 @@
 
 All notable changes to JFP Box are documented here.
 
+## [0.4.1] - 2026-09-03
+
+### Fixed
+
+- Corrected the JSON contract regression test to match validator version 0.4.0.
+- Restored a fully green GitHub Actions workflow after the v0.4.0 release.
+
 ## [0.4.0] - 2026-09-03
 
 ### Added
