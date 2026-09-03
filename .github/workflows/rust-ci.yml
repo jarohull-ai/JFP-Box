@@ -37,6 +37,11 @@ jobs:
       - name: Run tests
         run: cargo test --locked
 
+      - name: Audit dependencies
+        run: |
+          cargo install cargo-audit --locked
+          cargo audit
+
       - name: Compile benchmarks
         run: cargo bench --bench policy --no-run --locked
 

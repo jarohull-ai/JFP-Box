@@ -28,13 +28,15 @@ cargo fmt --all -- --check
 cargo test --locked
 cargo clippy --all-targets --all-features -- -D warnings
 cargo audit
-cargo +nightly fuzz run manifest -- -runs=10000 -max_len=4096
+cargo +nightly fuzz run manifest -- -max_total_time=300 -max_len=16384
 ```
 
-The short baseline fuzz run completed with 10,000 executions, no crashes,
-no panics, no hangs, and 186 coverage counters. This is an initial smoke test,
-not a formal security guarantee. Longer runs should be performed before a
-stable 1.0 release.
+The extended local fuzz run completed 1,415,642 executions with no crashes,
+panics, or hangs and reached 232 coverage counters. The checked-in corpus was
+minimized from 547 to 416 inputs while retaining the merged coverage set.
+These are reproducible smoke-test results, not a formal security guarantee.
+Longer runs and independent review remain appropriate before a stable 1.0
+release.
 
 ## Security boundary
 
