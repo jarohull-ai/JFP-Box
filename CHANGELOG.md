@@ -2,6 +2,18 @@
 
 All notable changes to JFP Box are documented here.
 
+## [0.4.2] - 2026-09-03
+
+### Added
+
+- Added `cargo audit` to the main Rust CI quality gate.
+- Added an automated weekly parser-fuzzing workflow, also available on demand.
+
+### Changed
+
+- Minimized the checked-in fuzzing corpus while retaining merged coverage.
+- Updated `SECURITY_TESTING.md` with the reproducible audit and fuzzing scope.
+
 ## [0.4.1] - 2026-09-03
 
 ### Fixed
