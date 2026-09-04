@@ -23,6 +23,13 @@ speed becomes risky when an agent can accidentally cross a workspace boundary,
 receive untrusted web content as instructions, or request tools it should never
 have had.
 
+For teams operating AI-enabled systems in regulated settings, a versioned policy
+and validation record can also provide technical evidence of how agent
+capabilities were declared and checked. JFP Box is infrastructure for those
+controls, not a compliance determination or certification; applicable
+obligations depend on the system's intended use and the organization deploying
+it.
+
 JFP Box separates two concerns:
 
 1. **Policy:** a short, versioned JFP manifest declares the permitted task
