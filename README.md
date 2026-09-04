@@ -98,6 +98,24 @@ Typical uses include:
 - Providing a stable JSON contract to a UI, scheduler, audit store, or
   enterprise approval workflow.
 
+## Companion projects
+
+JFP Box is used as a dependency by
+[viper-boxd](https://github.com/jarohull-ai/viper-boxd)
+([crates.io](https://crates.io/crates/viper-boxd)), an early-stage,
+experimental project exploring runtime enforcement of policies validated by
+JFP Box.
+
+viper-boxd's current status is alpha. It is not intended for production use
+and has not undergone independent security review. Its primary goal at this
+stage is simulation and proof-of-concept testing of an isolated runner for
+JFP contracts.
+
+JFP Box is fully functional as a standalone manifest validation tool and
+does not require viper-boxd to operate. This link is shared purely as
+information about ongoing ecosystem work, not as a recommendation to use
+the two together in production.
+
 ## Quick start
 
 Prerequisite: a current Rust toolchain with Cargo.
