@@ -11,6 +11,16 @@ task policy before a future agent runner receives permission to start work. It
 is designed for multi-agent systems where a visual workspace boundary alone is
 not a security boundary.
 
+## Status
+
+- **Project:** `jfp-box`
+- **Version:** `0.4.1`
+- **Stability:** stable policy validator, pre-1.0 library API
+- **Execution scope:** validation only; no process execution, sandboxing,
+  networking, provider access, or workspace writes
+- **Security status:** tested policy gate; not a runtime sandbox and not an
+  independent security certification
+
 Version `0.4.1` deliberately stops at planning. It starts no process, mounts no
 filesystem, opens no connection, accesses no model, and changes no project
 files. Its job is to make an unsafe or contradictory task policy fail early and
@@ -105,18 +115,19 @@ Typical uses include:
 - Providing a stable JSON contract to a UI, scheduler, audit store, or
   enterprise approval workflow.
 
-## Companion projects
+## Relationship to other projects
 
-JFP Box is used as a dependency by
-[viper-boxd](https://github.com/jarohull-ai/viper-boxd)
-([crates.io](https://crates.io/crates/viper-boxd)), an early-stage,
-experimental project exploring runtime enforcement of policies validated by
-JFP Box.
+JFP Box is the policy validator at the base of the JFP runtime ecosystem. It
+parses and validates `F:KEY:VALUE;` manifests and returns `PLAN_ACCEPTED` or
+`PLAN_REJECTED`. It does not enforce the accepted policy by itself.
 
-viper-boxd's current status is alpha. It is not intended for production use
-and has not undergone independent security review. Its primary goal at this
-stage is simulation and proof-of-concept testing of an isolated runner for
-JFP contracts.
+- [`viper-boxd`](https://github.com/jarohull-ai/viper-boxd) consumes accepted
+  JFP policies and experiments with runtime enforcement through systemd user
+  units, cgroups, filesystem controls, gateway mediation, lineage, admission
+  control, and observability. Its status is alpha.
+- `jfp-box-agent` is an experimental ACP adapter that presents JFP Box and
+  viper-boxd as one agent-facing runtime surface for AionUi-style clients. Its
+  status is alpha/experimental.
 
 JFP Box is fully functional as a standalone manifest validation tool and
 does not require viper-boxd to operate. This link is shared purely as
