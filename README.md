@@ -19,7 +19,14 @@ not a security boundary.
 - **Execution scope:** policy simulation, multi-format parsing (YAML/JSON/JFP), executive audit reporting, and runtime tool-call inspection
 - **Security status:** zero-trust policy gate; not a runtime sandbox and not an independent security certification
 
-> **💡 What's new in v0.5.0:** By popular demand from developers and security teams, you no longer need to learn a custom proprietary syntax. JFP Box v0.5.0 natively speaks **standard YAML** and **JSON**, while preserving the battle-tested, zero-overhead JFP Zero-Trust verification engine underneath. It also features **Executive Summaries (`jfp-box explain`)** for non-technical leadership and an **MCP / Tool-Call Safety Interceptor (`jfp-box check-tool`)**.
+> ### 💡 Evolution to v0.5.0: Designed for Developers, Built for Security
+> 
+> Due to numerous requests, feedback, and real-world adoption challenges, **we decided to simplify everyone's life**:
+> - **No new proprietary protocols to learn:** You no longer need to learn or write custom JFP syntax. JFP Box v0.5.0 speaks **standard YAML** and **JSON** natively out of the box, with automatic format detection.
+> - **Python SDK (`pip install jfp-box`):** High-performance Rust bindings via PyO3, allowing AI engineers using LangChain, CrewAI, AutoGen, or LlamaIndex to enforce policies with a single Python import.
+> - **Model Context Protocol (MCP) Proxy:** Acts as a transparent, sub-millisecond Zero-Trust security firewall (`jfp-box mcp-proxy`) for MCP agents and LLM tool-calling.
+> - **Executive & Human Explanations (`jfp-box explain`):** Instant, plain-English risk ratings (Low/Medium/High/Critical) and business-impact rationales that CEOs, CISOs, and engineers can immediately understand.
+> - **Under the hood:** We preserved the entire mathematically formal JFP Zero-Trust core engine and sub-millisecond Rust speed. You get all the rigor of formal policy verification without the friction.
 
 ## Why this exists
 

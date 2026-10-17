@@ -5,11 +5,13 @@ All notable changes to JFP Box are documented here.
 ## [0.5.0] - 2026-10-17
 
 ### Added
-- **Universal Multi-Format Support:** Natively parses policies in standard **YAML** (`.yaml`), **JSON** (`.json`), and legacy `.jfp` manifests, with automatic format detection.
+- **Developer-First Modernization:** Following requests to simplify adoption, standard **YAML** and **JSON** are now first-class policy formats alongside legacy `.jfp` manifests, backed by automatic format detection.
+- **Python SDK Bindings (`jfp-box` via PyO3):** High-speed Rust policy evaluation and tool interception directly inside Python for LangChain, CrewAI, AutoGen, and LlamaIndex agents.
+- **MCP Security Proxy (`jfp-box mcp-proxy`):** Transparent Zero-Trust stdio gateway for the Model Context Protocol (MCP), screening JSON-RPC `tools/call` invocations and preventing unauthorized agent actions.
 - **Executive Summaries & Human Explanations (`jfp-box explain` / `--explain`):** Plain-English risk assessment (Low, Medium, High, Critical), active security guardrails, financial budget caps, and business risk explanations for non-technical leadership and developers.
 - **Manifest Converter (`jfp-box convert`):** Bidirectional translation between YAML, JSON, and legacy JFP formats.
 - **Runtime Tool Interceptor & MCP Firewall (`jfp-box check-tool`):** Real-time inspection of agent tool calls and commands, blocking destructive shell execution (`rm -rf`, fork bombs), unauthorized secret access (`.env`, `.ssh`), and direct network bypasses (`curl`, reverse shells).
-- Exported new public library modules: `explain`, `tool_gate`, and `universal`.
+- Exported new public library modules: `explain`, `mcp`, `tool_gate`, and `universal`.
 
 ## [0.4.2] - 2026-09-03
 
