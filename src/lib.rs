@@ -5,6 +5,17 @@
 
 #![warn(missing_docs)]
 
+pub mod explain;
+pub mod tool_gate;
+pub mod universal;
+
+pub use explain::{HumanViolation, PolicyExplainer, PolicyExplanation, RiskLevel};
+pub use tool_gate::{ToolCheckResult, ToolDecision, ToolGate};
+pub use universal::{
+    manifest_to_json, manifest_to_yaml, parse_auto_manifest, parse_json_manifest,
+    parse_yaml_manifest,
+};
+
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -160,6 +171,11 @@ impl Manifest {
     /// their bracketed source representation.
     pub fn get(&self, key: &str) -> Option<&str> {
         self.fields.get(key).map(String::as_str)
+    }
+
+    /// Returns a reference to all key-value pairs stored in this manifest.
+    pub fn all_fields(&self) -> &BTreeMap<String, String> {
+        &self.fields
     }
 
     fn list(&self, key: &str) -> Result<Vec<String>, String> {
@@ -1069,7 +1085,8 @@ mod tests {
         assert_eq!(
             report,
             format!(
-                "{{\"validator_version\":\"0.4.1\",\"manifest_spec_version\":\"0.1\",\"plan_status\":\"PLAN_ACCEPTED\",\"errors\":[],\"audit_trace_id\":\"b3678c7c-1cb8-49a4-a9f5-4a272506b3a8\",\"manifest_sha256\":\"{hash}\",\"generated_at\":\"2026-09-02T08:20:00Z\"}}"
+                "{{\"validator_version\":\"{}\",\"manifest_spec_version\":\"0.1\",\"plan_status\":\"PLAN_ACCEPTED\",\"errors\":[],\"audit_trace_id\":\"b3678c7c-1cb8-49a4-a9f5-4a272506b3a8\",\"manifest_sha256\":\"{hash}\",\"generated_at\":\"2026-09-02T08:20:00Z\"}}",
+                env!("CARGO_PKG_VERSION")
             )
         );
     }

@@ -1,8 +1,8 @@
 [package]
 name = "jfp-box"
-version = "0.4.1"
+version = "0.5.0"
 edition = "2021"
-description = "Policy-first planner for JFP Box manifests"
+description = "Universal policy gate and zero-trust security guardrail for AI agent tasks"
 license-file = "LICENSE"
 repository = "https://github.com/jarohull-ai/JFP-Box"
 documentation = "https://docs.rs/jfp-box"
@@ -11,6 +11,11 @@ keywords = ["ai-agents", "ai-security", "policy-as-code", "multi-agent", "rust"]
 [[bin]]
 name = "jfp-box"
 path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
 
 [dev-dependencies]
 criterion = "0.5.1"

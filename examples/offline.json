@@ -1,0 +1,14 @@
+{
+  "allowed_gateways": [],
+  "audit_trace_id": "b3678c7c-1cb8-49a4-a9f5-4a272506b3a8",
+  "box_id": "BOX_OFFLINE_001",
+  "direct_network": "DENY",
+  "evidence_class": "UNTRUSTED",
+  "gateway_policy_id": "OFFLINE_V1",
+  "network_mode": "OFFLINE_STRICT",
+  "output_schema": "EVIDENCE_REPORT_V1",
+  "spec_version": "0.1",
+  "task_id": "OFFLINE_ANALYSIS_001",
+  "tool_bindings": [],
+  "write_mode": "PATCH_ONLY"
+}

@@ -14,17 +14,12 @@ not a security boundary.
 ## Status
 
 - **Project:** `jfp-box`
-- **Version:** `0.4.1`
-- **Stability:** stable policy validator, pre-1.0 library API
-- **Execution scope:** validation only; no process execution, sandboxing,
-  networking, provider access, or workspace writes
-- **Security status:** tested policy gate; not a runtime sandbox and not an
-  independent security certification
+- **Version:** `0.5.0`
+- **Stability:** stable policy validator, human-first executive reporting, pre-1.0 library API
+- **Execution scope:** policy simulation, multi-format parsing (YAML/JSON/JFP), executive audit reporting, and runtime tool-call inspection
+- **Security status:** zero-trust policy gate; not a runtime sandbox and not an independent security certification
 
-Version `0.4.1` deliberately stops at planning. It starts no process, mounts no
-filesystem, opens no connection, accesses no model, and changes no project
-files. Its job is to make an unsafe or contradictory task policy fail early and
-predictably.
+> **💡 What's new in v0.5.0:** By popular demand from developers and security teams, you no longer need to learn a custom proprietary syntax. JFP Box v0.5.0 natively speaks **standard YAML** and **JSON**, while preserving the battle-tested, zero-overhead JFP Zero-Trust verification engine underneath. It also features **Executive Summaries (`jfp-box explain`)** for non-technical leadership and an **MCP / Tool-Call Safety Interceptor (`jfp-box check-tool`)**.
 
 ## Why this exists
 
@@ -139,28 +134,42 @@ the two together in production.
 Prerequisite: a current Rust toolchain with Cargo.
 
 ```bash
-cd ~/Desktop/"JFP BOX"
-cargo run -- --version
-cargo run -- plan examples/research.jfp
+# 1. Build and check version
+cargo build --release
+./target/release/jfp-box --version
+
+# 2. Validate standard YAML or JSON policy (auto-detected):
+./target/release/jfp-box plan examples/research.yaml
+./target/release/jfp-box plan examples/offline.json
+
+# 3. Generate Executive Summary & Risk Analysis (for CEOs & Auditors):
+./target/release/jfp-box explain examples/research.yaml
+# Or as Markdown / JSON:
+./target/release/jfp-box explain --format markdown examples/research.yaml
+
+# 4. Intercept and validate agent tool calls in real time (MCP Security Gate):
+./target/release/jfp-box check-tool --manifest examples/research.yaml --tool SEARCH --arg "market trends"
+./target/release/jfp-box check-tool --manifest examples/research.yaml --tool BASH --arg "rm -rf /" # BLOCKED!
+
+# 5. Convert between formats (YAML <-> JSON <-> JFP):
+./target/release/jfp-box convert examples/research.jfp --to yaml
+./target/release/jfp-box convert examples/research.yaml --to json
+
+# 6. Legacy JFP format with machine-readable JSON output:
+./target/release/jfp-box plan --format json examples/research.jfp
 ```
 
-For automation, use the stable JSON output:
-
-```bash
-cargo run -- plan --format json examples/research.jfp
-```
-
-Example result:
+Example JSON result:
 
 ```json
 {
-  "validator_version": "0.4.1",
+  "validator_version": "0.5.0",
   "manifest_spec_version": "0.1",
   "plan_status": "PLAN_ACCEPTED",
   "errors": [],
   "audit_trace_id": "8f85f02a-0f3a-4b8e-9f93-8cc8d5cf8b3a",
   "manifest_sha256": "…",
-  "generated_at": "2026-09-02T08:20:00Z"
+  "generated_at": "2026-10-17T12:00:00Z"
 }
 ```
 

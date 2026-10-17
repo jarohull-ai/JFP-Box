@@ -1,0 +1,29 @@
+allowed_content_types:
+- text/html
+- application/pdf
+- text/plain
+allowed_gateways:
+- MODEL:VIPER_LOCAL_OLLAMA_V1
+- RESEARCH:PUBLIC_WEB_READONLY_V1
+audit_trace_id: 8f85f02a-0f3a-4b8e-9f93-8cc8d5cf8b3a
+box_id: BOX_OSINT_001
+direct_network: DENY
+evidence_class: UNTRUSTED
+gateway_policy_id: OSINT_PUBLIC_WEB_V1
+max_domains: 10
+max_fetch_bytes: 5M
+max_model_tokens: 12000
+max_redirects: 3
+max_research_requests: 30
+max_total_evidence_bytes: 25M
+model_cost_budget_usd: '0.02'
+network_mode: RESEARCH
+output_schema: EVIDENCE_REPORT_V1
+spec_version: '0.1'
+task_id: OSINT_COLLECT_001
+tool_bindings:
+- MODEL_GENERATE->MODEL:VIPER_LOCAL_OLLAMA_V1
+- SEARCH->RESEARCH:PUBLIC_WEB_READONLY_V1
+- FETCH->RESEARCH:PUBLIC_WEB_READONLY_V1
+write_mode: PATCH_ONLY
+

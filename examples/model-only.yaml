@@ -1,0 +1,17 @@
+allowed_gateways:
+- MODEL:VIPER_LOCAL_OLLAMA_V1
+audit_trace_id: 2e32d6e8-c811-49ce-839b-fd0112fa29a1
+box_id: BOX_MODEL_001
+direct_network: DENY
+evidence_class: UNTRUSTED
+gateway_policy_id: MODEL_LOCAL_V1
+max_model_tokens: 12000
+model_cost_budget_usd: '0.02'
+network_mode: MODEL_ONLY
+output_schema: EVIDENCE_REPORT_V1
+spec_version: '0.1'
+task_id: MODEL_ANALYSIS_001
+tool_bindings:
+- MODEL_GENERATE->MODEL:VIPER_LOCAL_OLLAMA_V1
+write_mode: PATCH_ONLY
+
