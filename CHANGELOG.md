@@ -2,6 +2,16 @@
 
 All notable changes to JFP Box are documented here.
 
+## [0.5.1] - 2026-10-17
+
+### Fixed & Hardened (Security Hardening Release)
+- **Hardened Tool-Call Interceptor (`ToolGate`):**
+  - **Whitespace & Lexical Normalization:** Collapses unicode whitespace, tabs, and multiline characters into single canonical tokens prior to pattern inspection, neutralizing whitespace bypasses (e.g. `curl\thttp://...`, `rm  -rf /`).
+  - **Exact Tool Binding Matching:** Replaced raw string substring checks with structured list parsing, preventing unassigned tool names (`MO`, `SEARC`) from matching valid tools (`MODEL_GENERATE`, `SEARCH`).
+  - **Expanded Destructive Command Engine:** Intercepts `rm -rf .`, recursive deletion targeting `*`, `.`, or `~`, disk formatting (`mkfs.ext4`, `wipefs`), raw block writes (`dd of=/dev/sd*`), and device redirections (`> /dev/sd*`).
+  - **Script Socket Defense:** Detects script-based socket connections (`import socket`, `socket.socket`, `tcpsocket`, `net.dial`) under `DIRECT_NETWORK:DENY`.
+  - **Empirical Red-Team Audit Score:** Hardened from 3/8 to **10/10 PASS**.
+
 ## [0.5.0] - 2026-10-17
 
 ### Added

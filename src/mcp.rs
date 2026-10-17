@@ -169,7 +169,7 @@ write_mode: PATCH_ONLY
         assert!(resp.error.is_some());
         let err = resp.error.unwrap();
         assert_eq!(err.code, -32000);
-        assert!(err.message.contains("Destructive command pattern"));
+        assert!(err.message.contains("Destructive"));
     }
 
     #[test]

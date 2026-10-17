@@ -180,7 +180,8 @@ impl Manifest {
         &self.fields
     }
 
-    fn list(&self, key: &str) -> Result<Vec<String>, String> {
+    /// Parses a list-valued field into individual items.
+    pub fn list(&self, key: &str) -> Result<Vec<String>, String> {
         self.get(key)
             .ok_or_else(|| "field is missing".to_owned())
             .and_then(parse_list)

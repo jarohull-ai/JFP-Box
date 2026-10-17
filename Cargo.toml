@@ -1,6 +1,6 @@
 [package]
 name = "jfp-box"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2021"
 description = "Universal policy gate and zero-trust security guardrail for AI agent tasks"
 license-file = "LICENSE"
