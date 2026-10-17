@@ -1,0 +1,15 @@
+[package]
+name = "jfp-box-py"
+version = "0.5.0"
+edition = "2021"
+description = "Python bindings for JFP-Box: Zero-Trust AI Agent Policy Gate & Tool Interceptor"
+license = "PolyForm-Noncommercial-1.0.0"
+
+[lib]
+name = "jfp_box"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.22", features = ["extension-module"] }
+jfp-box = { path = ".." }
+serde_json = "1.0"

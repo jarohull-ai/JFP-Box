@@ -48,24 +48,32 @@ impl ToolGate {
         let tool_clean = tool_name.trim();
         let arg_clean = argument.trim();
 
-        // 1. Check if tool is bound in TOOL_BINDINGS
-        let bindings = manifest.get("TOOL_BINDINGS").unwrap_or("[]");
-        let tool_is_bound = bindings.contains(tool_clean);
-
-        if !tool_is_bound && !bindings.contains(&format!("{}->", tool_clean)) {
-            return ToolCheckResult {
-                tool_name: tool_clean.to_string(),
-                decision: ToolDecision::Blocked,
-                risk_score: 85,
-                reason: format!(
-                    "Tool '{}' is not registered in task TOOL_BINDINGS: {}",
-                    tool_clean, bindings
-                ),
-                policy_reference: "POLICY:TOOL_BINDINGS_STRICT".to_string(),
-            };
+        // 1. Destructive Filesystem Command Check (Priority 1)
+        let destructive_patterns = [
+            "rm -rf /",
+            "rm -rf *",
+            "mkfs",
+            "dd if=",
+            ":(){ :|:& };:",
+            "wipefs",
+            "> /dev/sda",
+        ];
+        for pattern in destructive_patterns {
+            if arg_clean.contains(pattern) {
+                return ToolCheckResult {
+                    tool_name: tool_clean.to_string(),
+                    decision: ToolDecision::Blocked,
+                    risk_score: 100,
+                    reason: format!(
+                        "Destructive command pattern '{}' detected. Immediate safety block.",
+                        pattern
+                    ),
+                    policy_reference: "POLICY:DESTRUCTIVE_EXECUTION_GUARD".to_string(),
+                };
+            }
         }
 
-        // 2. Direct Network Denial Check
+        // 2. Direct Network Denial Check (Priority 2)
         if manifest.get("DIRECT_NETWORK") == Some("DENY") {
             let network_binaries = [
                 "curl ", "wget ", "nc ", "ncat ", "socat ", "ssh ", "telnet ", "scp ",
@@ -96,32 +104,7 @@ impl ToolGate {
             }
         }
 
-        // 3. Destructive Filesystem Command Check
-        let destructive_patterns = [
-            "rm -rf /",
-            "rm -rf *",
-            "mkfs",
-            "dd if=",
-            ":(){ :|:& };:",
-            "wipefs",
-            "> /dev/sda",
-        ];
-        for pattern in destructive_patterns {
-            if arg_clean.contains(pattern) {
-                return ToolCheckResult {
-                    tool_name: tool_clean.to_string(),
-                    decision: ToolDecision::Blocked,
-                    risk_score: 100,
-                    reason: format!(
-                        "Destructive command pattern '{}' detected. Immediate safety block.",
-                        pattern
-                    ),
-                    policy_reference: "POLICY:DESTRUCTIVE_EXECUTION_GUARD".to_string(),
-                };
-            }
-        }
-
-        // 4. Sensitive Secret Access Check
+        // 3. Sensitive Secret Access Check (Priority 3)
         let sensitive_paths = [
             "/etc/shadow",
             "/etc/passwd",
@@ -145,7 +128,7 @@ impl ToolGate {
             }
         }
 
-        // 5. URL Scheme Verification for Web Tools (FETCH / SEARCH)
+        // 4. URL Scheme Verification for Web Tools (FETCH / SEARCH)
         if (tool_clean.eq_ignore_ascii_case("FETCH") || tool_clean.eq_ignore_ascii_case("SEARCH"))
             && (arg_clean.starts_with("file://") || arg_clean.starts_with("gopher://"))
         {
@@ -157,6 +140,23 @@ impl ToolGate {
                     "Unsupported or insecure protocol (file://, gopher://) in web research tool"
                         .to_string(),
                 policy_reference: "POLICY:URL_SCHEME_VALIDATION".to_string(),
+            };
+        }
+
+        // 5. Check if tool is bound in TOOL_BINDINGS
+        let bindings = manifest.get("TOOL_BINDINGS").unwrap_or("[]");
+        let tool_is_bound = bindings.contains(tool_clean);
+
+        if !tool_is_bound && !bindings.contains(&format!("{}->", tool_clean)) {
+            return ToolCheckResult {
+                tool_name: tool_clean.to_string(),
+                decision: ToolDecision::Blocked,
+                risk_score: 85,
+                reason: format!(
+                    "Tool '{}' is not registered in task TOOL_BINDINGS: {}",
+                    tool_clean, bindings
+                ),
+                policy_reference: "POLICY:TOOL_BINDINGS_STRICT".to_string(),
             };
         }
 

@@ -1,8 +1,12 @@
 /target/
 /fuzz/target/
 /fuzz/artifacts/
+python-binding/target/
+python-binding/.venv/
+*.so
 .env
 .env.*
 !.env.example
 *.log
 .DS_Store
+

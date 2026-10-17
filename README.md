@@ -217,6 +217,41 @@ The library API is versioned with the executable and remains pre-1.0 until a
 future `v1.0.0` stable API commitment. It validates policy; it does not spawn
 or sandbox a process.
 
+## Python SDK (`jfp-box`)
+
+For AI engineering teams building with Python (LangChain, LlamaIndex, CrewAI, AutoGen):
+
+```bash
+cd python-binding
+pip install .
+```
+
+```python
+import jfp_box
+
+# Load policy (YAML, JSON, or JFP)
+policy = jfp_box.Policy.from_file("examples/research.yaml")
+
+# Check policy validity & explain in executive terms
+explanation = policy.explain()
+print("Executive Summary:", explanation["executive_summary"])
+
+# Real-Time Tool-Call Interception (intercept malicious tool calls)
+verdict = policy.check_tool("bash", "rm -rf /")
+if not verdict.allowed:
+    print(f"Blocked! Risk: {verdict.risk_score}/100. Reason: {verdict.reason}")
+```
+
+## Model Context Protocol (MCP) Security Proxy
+
+Run `jfp-box` as a Zero-Trust stdio gateway for any MCP agent client or server:
+
+```bash
+jfp-box mcp-proxy --manifest policy.yaml
+```
+
+Incoming JSON-RPC `tools/call` invocations are evaluated in sub-millisecond time. Dangerous commands, unauthorized network exfiltration, or unregistered tools receive immediate JSON-RPC error `-32000` blocks before execution.
+
 ## Distribution
 
 The Rust package is available on [crates.io](https://crates.io/crates/jfp-box)

@@ -7,7 +7,7 @@ use std::process::ExitCode;
 
 use jfp_box::{
     json_report, manifest_to_json, manifest_to_yaml, now_rfc3339, parse_auto_manifest, sha256_hex,
-    validate, Manifest, PolicyExplainer, ToolDecision, ToolGate, Violation,
+    validate, Manifest, McpGateway, PolicyExplainer, ToolDecision, ToolGate, Violation,
 };
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -35,6 +35,9 @@ enum Command {
         manifest_path: String,
         tool: String,
         arg: String,
+    },
+    McpProxy {
+        manifest_path: String,
     },
 }
 
@@ -93,6 +96,7 @@ fn usage() {
     eprintln!("  jfp-box explain [--format human|json|markdown] <manifest>");
     eprintln!("  jfp-box convert <manifest> --to yaml|json|jfp");
     eprintln!("  jfp-box check-tool --manifest <manifest> --tool <tool_name> [--arg <argument>]");
+    eprintln!("  jfp-box mcp-proxy --manifest <manifest>");
     eprintln!();
     eprintln!("Options:");
     eprintln!("  --format <fmt>  Output format: human (default), json, or markdown");
@@ -105,7 +109,7 @@ fn parse_cli(arguments: &[String]) -> Result<Command, String> {
     let subcommand = arguments
         .first()
         .map(String::as_str)
-        .ok_or_else(|| "expected a subcommand (plan, explain, convert, check-tool)".to_owned())?;
+        .ok_or_else(|| "expected a subcommand (plan, explain, convert, check-tool, mcp-proxy)".to_owned())?;
 
     match subcommand {
         "plan" => {
@@ -246,8 +250,31 @@ fn parse_cli(arguments: &[String]) -> Result<Command, String> {
                 arg,
             })
         }
+        "mcp-proxy" => {
+            let mut manifest_path = None;
+            let mut index = 1;
+
+            while index < arguments.len() {
+                match arguments[index].as_str() {
+                    "--manifest" | "-m" => {
+                        index += 1;
+                        manifest_path = arguments.get(index).cloned();
+                    }
+                    value if value.starts_with('-') => {
+                        return Err(format!("unknown option: {value}"))
+                    }
+                    value if manifest_path.is_none() => manifest_path = Some(value.to_owned()),
+                    value => return Err(format!("unexpected argument: {value}")),
+                }
+                index += 1;
+            }
+
+            let manifest_path =
+                manifest_path.ok_or_else(|| "--manifest <path> is required".to_owned())?;
+            Ok(Command::McpProxy { manifest_path })
+        }
         other => Err(format!(
-            "unknown subcommand '{other}'. Expected plan, explain, convert, or check-tool"
+            "unknown subcommand '{other}'. Expected plan, explain, convert, check-tool, or mcp-proxy"
         )),
     }
 }
@@ -487,6 +514,53 @@ fn main() -> ExitCode {
             } else {
                 ExitCode::from(1)
             }
+        }
+        Command::McpProxy { manifest_path } => {
+            use std::io::{self, BufRead};
+
+            let (_bytes, _hash, _time, input) = match read_manifest_file(&manifest_path) {
+                Ok(data) => data,
+                Err(code) => return code,
+            };
+
+            let manifest = match parse_auto_manifest(&input) {
+                Ok(m) => m,
+                Err(errors) => {
+                    eprintln!("Policy manifest is invalid:");
+                    for error in errors {
+                        eprintln!("- {}: {}", error.code(), error.message());
+                    }
+                    return ExitCode::from(1);
+                }
+            };
+
+            eprintln!("🛡️ JFP-Box MCP Zero-Trust Security Proxy active for policy: {}", manifest_path);
+            eprintln!("Listening for JSON-RPC messages on STDIN...");
+
+            let stdin = io::stdin();
+            for line in stdin.lock().lines() {
+                let line_str = match line {
+                    Ok(l) => l,
+                    Err(_) => break,
+                };
+
+                match McpGateway::intercept(&manifest, &line_str) {
+                    Ok(Some(blocked_resp)) => {
+                        // Print blocked response back to MCP client
+                        if let Ok(json_out) = serde_json::to_string(&blocked_resp) {
+                            println!("{}", json_out);
+                        }
+                    }
+                    Ok(None) => {
+                        // Pass-through or allowed
+                        eprintln!("[JFP-Box Pass-Through] {}", line_str);
+                    }
+                    Err(err) => {
+                        eprintln!("[JFP-Box Error] {}", err);
+                    }
+                }
+            }
+            ExitCode::SUCCESS
         }
     }
 }

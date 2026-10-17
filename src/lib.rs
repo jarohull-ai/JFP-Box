@@ -6,10 +6,12 @@
 #![warn(missing_docs)]
 
 pub mod explain;
+pub mod mcp;
 pub mod tool_gate;
 pub mod universal;
 
 pub use explain::{HumanViolation, PolicyExplainer, PolicyExplanation, RiskLevel};
+pub use mcp::{JsonRpcError, JsonRpcRequest, JsonRpcResponse, McpGateway};
 pub use tool_gate::{ToolCheckResult, ToolDecision, ToolGate};
 pub use universal::{
     manifest_to_json, manifest_to_yaml, parse_auto_manifest, parse_json_manifest,

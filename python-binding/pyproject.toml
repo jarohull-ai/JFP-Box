@@ -1,0 +1,22 @@
+[build-system]
+requires = ["maturin>=1.4,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "jfp-box"
+version = "0.5.0"
+description = "Python bindings for JFP-Box: Universal Zero-Trust Policy Gate & Tool Interceptor for AI Agents"
+readme = "README.md"
+requires-python = ">=3.8"
+keywords = ["ai-agents", "agent-security", "guardrails", "zero-trust", "mcp", "langchain"]
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: 3",
+    "Topic :: Security",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence"
+]
+
+[tool.maturin]
+features = ["pyo3/extension-module"]
+module-name = "jfp_box"
