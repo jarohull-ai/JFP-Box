@@ -6,6 +6,9 @@
 //! Provides defense-in-depth inspection of proposed agent commands and tool invocations,
 //! with strict lexical tokenization, whitespace normalization, destructive execution
 //! detection, network bypass mitigation, socket interception, and exact-match tool bindings.
+//!
+//! This gate is not a shell parser or an OS sandbox. Callers must validate manifests and
+//! enforce execution isolation independently; lexical checks alone cannot prove a command safe.
 
 use super::Manifest;
 use serde::{Deserialize, Serialize};
@@ -68,6 +71,28 @@ impl ToolGate {
     /// Evaluates a proposed tool call against an active manifest policy.
     pub fn evaluate(manifest: &Manifest, tool_name: &str, argument: &str) -> ToolCheckResult {
         let tool_clean = tool_name.trim();
+
+        // Never allow execution based on a syntactically parsed but semantically invalid
+        // manifest. In particular, TOOL_BINDINGS must have supported tools and approved
+        // gateways before any call can be marked Allowed.
+        let validation_errors = super::validate(manifest);
+        if !validation_errors.is_empty() {
+            return ToolCheckResult {
+                tool_name: tool_clean.to_string(),
+                decision: ToolDecision::Blocked,
+                risk_score: 100,
+                reason: format!(
+                    "Manifest failed policy validation: {}",
+                    validation_errors
+                        .iter()
+                        .map(|error| error.code())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                ),
+                policy_reference: "POLICY:MANIFEST_VALIDATION".to_string(),
+            };
+        }
+
         let raw_arg = argument.trim();
         let norm_arg = Self::normalize_command(raw_arg);
         let tokens = Self::tokenize_command(raw_arg);
@@ -119,7 +144,7 @@ impl ToolGate {
             || norm_arg.contains("> /dev/sd")
             || norm_arg.contains("> /dev/nvme")
             || norm_arg.contains(">/dev/sd")
-            || norm_arg.contains(":(){ :|:& };:")
+            || norm_arg.contains(":(){ :|:& };")
             || norm_arg.contains("chmod -r 777 /")
             || norm_arg.contains("chmod -r 000 /")
         {
@@ -243,27 +268,19 @@ impl ToolGate {
         // =========================================================================
         // 5. Strict Structural TOOL_BINDINGS Check (Exact Match)
         // =========================================================================
-        // We parse TOOL_BINDINGS as an exact list. Each entry is "TOOL_NAME->GATEWAY".
-        // Partial substring matches (like 'MO' matching 'MODEL_GENERATE') are strictly REJECTED.
-        let allowed_tools: Vec<String> = match manifest.list("TOOL_BINDINGS") {
-            Ok(bindings) => bindings
-                .into_iter()
-                .filter_map(|binding| {
-                    binding
-                        .split_once("->")
-                        .map(|(tool, _)| tool.trim().to_string())
-                        .or_else(|| {
-                            let trimmed = binding.trim();
-                            if !trimmed.is_empty() {
-                                Some(trimmed.to_string())
-                            } else {
-                                None
-                            }
-                        })
-                })
-                .collect(),
-            Err(_) => Vec::new(),
-        };
+        // Manifest validation above guarantees that each binding is well-formed and
+        // points to a supported tool and approved gateway. Do not treat malformed
+        // list entries as a tool name.
+        let allowed_tools: Vec<String> = manifest
+            .list("TOOL_BINDINGS")
+            .expect("validated manifest must contain a valid TOOL_BINDINGS list")
+            .into_iter()
+            .filter_map(|binding| {
+                binding
+                    .split_once("->")
+                    .map(|(tool, _)| tool.trim().to_string())
+            })
+            .collect();
 
         let is_exactly_bound = allowed_tools
             .iter()
@@ -355,5 +372,34 @@ mod tests {
         // Exact match must be accepted
         let r_valid = ToolGate::evaluate(&manifest, "SEARCH", "Rust Zero Trust");
         assert_eq!(r_valid.decision, ToolDecision::Allowed);
+    }
+
+    #[test]
+    fn test_rejects_semantically_invalid_manifest_before_allowing_tool() {
+        let invalid_source = include_str!("../examples/research.jfp")
+            .replace(
+                "SEARCH->RESEARCH:PUBLIC_WEB_READONLY_V1",
+                "SEARCH",
+            );
+        let invalid_manifest = parse_manifest(&invalid_source).unwrap();
+
+        let result = ToolGate::evaluate(&invalid_manifest, "SEARCH", "Rust Zero Trust");
+        assert_eq!(result.decision, ToolDecision::Blocked);
+        assert_eq!(result.policy_reference, "POLICY:MANIFEST_VALIDATION");
+        assert!(result.reason.contains("ERR_INVALID_TOOL_BINDING"));
+    }
+
+    #[test]
+    fn test_rejects_binding_to_unapproved_gateway() {
+        let invalid_source = include_str!("../examples/research.jfp").replace(
+            "SEARCH->RESEARCH:PUBLIC_WEB_READONLY_V1",
+            "SEARCH->MODEL:VIPER_LOCAL_OLLAMA_V1",
+        );
+        let invalid_manifest = parse_manifest(&invalid_source).unwrap();
+
+        let result = ToolGate::evaluate(&invalid_manifest, "SEARCH", "Rust Zero Trust");
+        assert_eq!(result.decision, ToolDecision::Blocked);
+        assert_eq!(result.policy_reference, "POLICY:MANIFEST_VALIDATION");
+        assert!(result.reason.contains("ERR_TOOL_GATEWAY_TYPE"));
     }
 }
